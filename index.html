@@ -4,187 +4,251 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <meta name="theme-color" content="#101722">
-  <meta name="description" content="Advanced trigonometry calculator with formula libraries, symbolic identity verification, step-by-step proofs and equation solving.">
+  <meta name="description" content="Advanced Trigonometry Calculator with formulas, identity verification, step-by-step proofs, and equation solving.">
+
   <title>Advanced Trigonometry Calculator</title>
+
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+
+  <script src="app.js" defer></script>
 </head>
 
 <body>
- 
-<header class="app-header">
-  <div class="brand">
-    <img
-      src="icon.svg"
-      alt="Advanced Trigonometry Calculator logo"
-      class="app-logo"
-    />
+  <header class="app-header">
+    <div class="brand">
+      <img
+        src="icon.svg"
+        alt="Advanced Trigonometry Calculator logo"
+        class="app-logo"
+        width="84"
+        height="84"
+      >
 
-    <div>
-      <h1>Advanced Trigonometry Calculator</h1>
-      <p>Calculate · Explore · Prove</p>
-    </div>
-  </div>
-
-  <div>
-    <span id="connectionStatus">Checking connection...</span>
-    <button id="installButton" hidden>Install App</button>
-  </div>
-</header>
-
-  <nav class="tabs" aria-label="Calculator sections">
-    <button class="tab active" data-tab="calculator">Calculator</button>
-    <button class="tab" data-tab="compound">Compound &amp; Multiple</button>
-    <button class="tab" data-tab="formulas">Formula Library</button>
-    <button class="tab" data-tab="proof-library">Proof Library</button>
-    <button class="tab" data-tab="prover">Prove an Identity</button>
-    <button class="tab" data-tab="equations">Equation Solver</button>
-  </nav>
-
-  <main class="container">
-
-    <!-- 1. NUMERIC CALCULATOR -->
-    <section class="tab-content active" id="calculator">
-      <h2>Trigonometry Calculator</h2>
-      <p>Calculate expressions using degrees for numeric angles by default.</p>
-
-      <label for="calcInput">Expression</label>
-      <input id="calcInput" type="text"
-        value="sin(30)^2 + cos(30)^2"
-        placeholder="Example: sin(30)^2 + cos(30)^2">
-
-      <button id="calculateBtn">Calculate</button>
-      <button id="clearCalcBtn" class="secondary">Clear</button>
-
-      <pre id="calcOutput" class="output" aria-live="polite">Your result will appear here.</pre>
-    </section>
-
-    <!-- 2. COMPOUND AND MULTIPLE ANGLES -->
-    <section class="tab-content" id="compound" hidden>
-      <h2>Compound &amp; Multiple Angles</h2>
-      <p>Select an identity to load it into the calculator.</p>
-
-      <div id="compoundButtons" class="button-list">
-        <button data-expression="sin(x+y)">sin(x + y)</button>
-        <button data-expression="cos(x+y)">cos(x + y)</button>
-        <button data-expression="sin(2*x)">sin(2x)</button>
-        <button data-expression="cos(2*x)">cos(2x)</button>
-        <button data-expression="sin(3*x)">sin(3x)</button>
-        <button data-expression="cos(3*x)">cos(3x)</button>
+      <div>
+        <h1>Advanced Trigonometry Calculator</h1>
+        <p>Calculate · Explore · Prove</p>
       </div>
+    </div>
 
-      <p class="note">Symbolic angles in identities are interpreted in radians.</p>
+    <div class="header-actions">
+      <span id="connectionStatus">Checking connection...</span>
+      <button id="installButton" hidden>Install App</button>
+    </div>
+  </header>
+
+  <main>
+    <nav class="tabs" aria-label="Calculator sections">
+      <button class="tab-button active" data-tab="calculator" aria-selected="true">Calculator</button>
+      <button class="tab-button" data-tab="compound" aria-selected="false">Compound Angles</button>
+      <button class="tab-button" data-tab="formulas" aria-selected="false">Formula Library</button>
+      <button class="tab-button" data-tab="proof-library" aria-selected="false">Proof Library</button>
+      <button class="tab-button" data-tab="prover" aria-selected="false">Identity Prover</button>
+      <button class="tab-button" data-tab="equations" aria-selected="false">Equation Solver</button>
+    </nav>
+
+    <!-- CALCULATOR -->
+    <section id="calculator" class="tab-content">
+      <div class="panel">
+        <h2>Scientific Trigonometry Calculator</h2>
+        <p class="muted">Evaluate trigonometric expressions and mathematical calculations.</p>
+
+        <label for="calcInput">Enter an expression</label>
+        <input id="calcInput" type="text" placeholder="Example: sin(30) or sqrt(16)" autocomplete="off">
+
+        <div class="button-row">
+          <button id="calculateBtn" class="primary">Calculate</button>
+          <button id="clearCalcBtn" type="button">Clear</button>
+        </div>
+
+        <div id="calcOutput" class="output" aria-live="polite"></div>
+
+        <p class="muted">
+          Check whether your JavaScript calculation engine expects degrees or radians.
+          Standard JavaScript trigonometric functions use radians.
+        </p>
+      </div>
     </section>
 
-    <!-- 3. FORMULA LIBRARY -->
-    <section class="tab-content" id="formulas" hidden>
-      <h2>Formula Library</h2>
-      <p>Browse identities by category and select one to inspect.</p>
+    <!-- COMPOUND ANGLES -->
+    <section id="compound" class="tab-content" hidden>
+      <div class="panel">
+        <h2>Compound Angles</h2>
+        <p>Explore sum and difference identities.</p>
 
-      <label for="formulaCategory">Category</label>
-      <select id="formulaCategory">
-        <option value="All">All categories</option>
-        <option value="Reciprocal">Reciprocal</option>
-        <option value="Quotient">Quotient</option>
-        <option value="Pythagorean">Pythagorean</option>
-        <option value="Even/odd">Even/odd</option>
-        <option value="Cofunction">Cofunction</option>
-        <option value="Addition">Addition</option>
-        <option value="Double angle">Double angle</option>
-        <option value="Half angle">Half angle</option>
-        <option value="Product-sum">Product to sum</option>
-        <option value="Sum-product">Sum to product</option>
-        <option value="Triple angle">Triple angle</option>
-      </select>
+        <div class="grid">
+          <div class="card">
+            <h3>Sine addition</h3>
+            <p class="formula">sin(A + B) = sin A cos B + cos A sin B</p>
+          </div>
 
-      <div class="formula-layout">
-        <div id="formulaList" class="formula-list"></div>
-        <div>
-          <pre id="formulaDetails" class="output">Select a formula to see its details.</pre>
-          <button id="formulaToCalcBtn">Send left side to Calculator</button>
+          <div class="card">
+            <h3>Cosine addition</h3>
+            <p class="formula">cos(A + B) = cos A cos B − sin A sin B</p>
+          </div>
+
+          <div class="card">
+            <h3>Sine difference</h3>
+            <p class="formula">sin(A − B) = sin A cos B − cos A sin B</p>
+          </div>
+
+          <div class="card">
+            <h3>Cosine difference</h3>
+            <p class="formula">cos(A − B) = cos A cos B + sin A sin B</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- 4. PROOF LIBRARY -->
-    <section class="tab-content" id="proof-library" hidden>
-      <h2>Proof Library</h2>
-      <p>Choose a standard identity to check and view its derivation.</p>
+    <!-- FORMULA LIBRARY -->
+    <section id="formulas" class="tab-content" hidden>
+      <div class="panel">
+        <h2>Trigonometric Formula Library</h2>
 
-      <label for="proofExample">Choose an identity</label>
-      <select id="proofExample">
-        <option value="pythagorean">sin²(x) + cos²(x) = 1</option>
-        <option value="double-sine">sin(2x) = 2sin(x)cos(x)</option>
-        <option value="double-cosine">cos(2x) = 1 − 2sin²(x)</option>
-        <option value="triple-sine">sin(3x) = 3sin(x) − 4sin³(x)</option>
-        <option value="addition-sine">sin(x + y) = sin(x)cos(y) + cos(x)sin(y)</option>
-        <option value="quotient-tangent">tan(x) = sin(x)/cos(x)</option>
-      </select>
+        <label for="formulaCategory">Choose a formula category</label>
+        <select id="formulaCategory">
+          <option value="">Select a category</option>
+          <option value="Basic identities">Basic identities</option>
+          <option value="Compound angles">Compound angles</option>
+          <option value="Double angles">Double angles</option>
+          <option value="Triple angles">Triple angles</option>
+          <option value="Half angles">Half angles</option>
+          <option value="Product-to-sum">Product-to-sum</option>
+          <option value="Sum-to-product">Sum-to-product</option>
+          <option value="Multiple angles">Multiple angles</option>
+          <option value="Triangle formulas">Triangle formulas</option>
+        </select>
 
-      <button id="runProofExampleBtn">Check selected identity</button>
-      <pre id="proofLibraryOutput" class="output" aria-live="polite">Proof steps will appear here.</pre>
+        <div id="formulaList"></div>
+        <div id="formulaDetails" class="output" aria-live="polite"></div>
+
+        <button id="formulaToCalcBtn" type="button">Use Formula in Calculator</button>
+      </div>
     </section>
 
-    <!-- 5. SYMBOLIC IDENTITY PROVER -->
-    <section class="tab-content" id="prover" hidden>
-      <h2>Prove an Identity</h2>
-      <p>
-        Enter both sides of an identity. Use ^ for powers,
-        such as sin(x)^2. Symbolic angles are in radians.
-      </p>
+    <!-- PROOF LIBRARY -->
+    <section id="proof-library" class="tab-content" hidden>
+      <div class="panel">
+        <h2>Step-by-Step Proof Library</h2>
+        <p class="muted">Select an available proof example to explore its derivation.</p>
 
-      <label for="lhsInput">Left-hand side (LHS)</label>
-      <input id="lhsInput" type="text" value="sin(2*x)">
+        <label for="proofExample">Choose a proof</label>
+        <select id="proofExample">
+          <option value="">Select a proof example</option>
+          <option value="pythagorean">Pythagorean identity</option>
+          <option value="sin-addition">Sine addition identity</option>
+          <option value="cos-addition">Cosine addition identity</option>
+          <option value="double-angle">Sine double-angle identity</option>
+          <option value="triple-angle">Sine triple-angle identity</option>
+          <option value="tangent-addition">Tangent addition identity</option>
+        </select>
 
-      <label for="rhsInput">Right-hand side (RHS)</label>
-      <input id="rhsInput" type="text" value="2*sin(x)*cos(x)">
-
-      <button id="proveBtn">Test Identity</button>
-      <button id="loadExampleBtn" class="secondary">Load Example</button>
-
-      <pre id="identityOutput" class="output" aria-live="polite">Enter an identity and test it.</pre>
+        <button id="runProofExampleBtn" class="primary" type="button">Show Proof</button>
+        <div id="proofLibraryOutput" class="output" aria-live="polite"></div>
+      </div>
     </section>
 
-    <!-- 6. EQUATION SOLVER -->
-    <section class="tab-content" id="equations" hidden>
-      <h2>Trigonometric Equation Solver</h2>
-      <p>Solve sin(x) = k, cos(x) = k or tan(x) = k over a chosen interval.</p>
+    <!-- IDENTITY PROVER -->
+    <section id="prover" class="tab-content" hidden>
+      <div class="panel">
+        <h2>Trigonometric Identity Prover</h2>
+        <p class="muted">Enter both sides of an identity and check whether the proof engine can verify it.</p>
 
-      <label for="eqFunction">Function</label>
-      <select id="eqFunction">
-        <option value="sin">sin(x)</option>
-        <option value="cos">cos(x)</option>
-        <option value="tan">tan(x)</option>
-      </select>
+        <label for="lhsInput">Left-hand side (LHS)</label>
+        <input id="lhsInput" type="text" placeholder="Example: sin(x)^2 + cos(x)^2" autocomplete="off">
 
-      <label for="eqValue">Value of k</label>
-      <input id="eqValue" type="number" step="any" value="0.5">
+        <label for="rhsInput">Right-hand side (RHS)</label>
+        <input id="rhsInput" type="text" placeholder="Example: 1" autocomplete="off">
 
-      <label for="eqAngleMode">Angle unit</label>
-      <select id="eqAngleMode">
-        <option value="degrees">Degrees</option>
-        <option value="radians">Radians</option>
-      </select>
+        <div class="button-row">
+          <button id="proveBtn" class="primary" type="button">Prove Identity</button>
+          <button id="loadExampleBtn" type="button">Load Example</button>
+        </div>
 
-      <label for="eqStart">Interval start</label>
-      <input id="eqStart" type="number" step="any" value="0">
+        <div id="identityOutput" class="output" aria-live="polite"></div>
 
-      <label for="eqEnd">Interval end</label>
-      <input id="eqEnd" type="number" step="any" value="360">
-
-      <button id="solveEquationBtn">Solve Equation</button>
-      <pre id="equationOutput" class="output" aria-live="polite">Solutions will appear here.</pre>
+        <p class="muted">
+          A failed automatic check does not necessarily mean the identity is false.
+          Mathematical proof depends on the capabilities of the proof engine.
+        </p>
+      </div>
     </section>
 
+    <!-- EQUATION SOLVER -->
+    <section id="equations" class="tab-content" hidden>
+      <div class="panel">
+        <h2>Trigonometric Equation Solver</h2>
+
+        <label for="eqFunction">Trigonometric function</label>
+        <select id="eqFunction">
+          <option value="sin">sin(x)</option>
+          <option value="cos">cos(x)</option>
+          <option value="tan">tan(x)</option>
+        </select>
+
+        <label for="eqValue">Target value</label>
+        <input id="eqValue" type="number" step="any" placeholder="Example: 0.5">
+
+        <label for="eqAngleMode">Angle unit</label>
+        <select id="eqAngleMode">
+          <option value="degrees">Degrees</option>
+          <option value="radians">Radians</option>
+        </select>
+
+        <div class="grid">
+          <div>
+            <label for="eqStart">Start angle</label>
+            <input id="eqStart" type="number" value="0" step="any">
+          </div>
+
+          <div>
+            <label for="eqEnd">End angle</label>
+            <input id="eqEnd" type="number" value="360" step="any">
+          </div>
+        </div>
+
+        <button id="solveEquationBtn" class="primary" type="button">Solve Equation</button>
+
+        <div id="equationOutput" class="output" aria-live="polite"></div>
+      </div>
+    </section>
   </main>
 
   <footer>
     <p>Advanced Trigonometry Calculator</p>
-    <p>Offline-ready mathematics workspace</p>
+    <p>Calculate accurately. Explore identities. Understand proofs.</p>
   </footer>
 
-  <script src="app.js" defer></script>
+  <script>
+    // Switch between calculator sections.
+    document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const targetId = button.dataset.tab;
+
+        document.querySelectorAll(".tab-button").forEach((tab) => {
+          const selected = tab === button;
+          tab.classList.toggle("active", selected);
+          tab.setAttribute("aria-selected", String(selected));
+        });
+
+        document.querySelectorAll(".tab-content").forEach((section) => {
+          section.hidden = section.id !== targetId;
+        });
+      });
+    });
+
+    // Register offline support when hosted on HTTPS or localhost.
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch((error) => {
+          console.error("Service worker registration failed:", error);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
