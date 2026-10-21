@@ -13,16 +13,26 @@
 </head>
 
 <body>
-  <header class="app-header">
+ 
+<header class="app-header">
+  <div class="brand">
+    <img
+      src="icon.svg"
+      alt="Advanced Trigonometry Calculator logo"
+      class="app-logo"
+    />
+
     <div>
       <h1>Advanced Trigonometry Calculator</h1>
       <p>Calculate · Explore · Prove</p>
     </div>
-    <div>
-      <span id="connectionStatus">Checking connection...</span>
-      <button id="installButton" hidden>Install App</button>
-    </div>
-  </header>
+  </div>
+
+  <div>
+    <span id="connectionStatus">Checking connection...</span>
+    <button id="installButton" hidden>Install App</button>
+  </div>
+</header>
 
   <nav class="tabs" aria-label="Calculator sections">
     <button class="tab active" data-tab="calculator">Calculator</button>
