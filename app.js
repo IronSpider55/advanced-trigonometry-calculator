@@ -426,13 +426,16 @@ const PROOF_LIBRARY = {
   }
 };
 
+
 function normalise(s) {
   return s.toLowerCase()
     .replace(/\s+/g, "")
     .replace(/[−–]/g, "-")
     .replace(/π/g, "pi")
     .replace(/²/g, "^2")
-    .replace(/³/g, "^3");
+    .replace(/³/g, "^3")
+    // Treat (sin(x))^2 as equivalent to sin(x)^2.
+    .replace(/\((sin|cos|tan)\(([^()]*)\)\)\^(\d+)/g, "$1($2)^$3");
 }
 
 function loadProof(proof) {
