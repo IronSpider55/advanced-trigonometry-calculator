@@ -620,3 +620,16 @@ window.addEventListener("offline", updateConnectionStatus);
 updateConnectionStatus();
 
 console.log("Advanced Trigonometry Calculator loaded.");
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then(() => {
+        console.log("Offline support registered successfully.");
+      })
+      .catch((error) => {
+        console.error("Service worker registration failed:", error);
+      });
+  });
+}
