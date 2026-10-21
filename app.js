@@ -1,207 +1,221 @@
 
 "use strict";
 
-/* =========================================================
+/* ==========================================================
    ADVANCED TRIGONOMETRY CALCULATOR
-   Browser-based starter engine
-   No external libraries required
-   ========================================================= */
+   Complete browser-based starter implementation.
+   No external libraries required.
+   ========================================================== */
 
 const $ = (id) => document.getElementById(id);
-
-const DEG = Math.PI / 180;
 const EPS = 1e-9;
+const DEG = Math.PI / 180;
 
-function formatNumber(value) {
-  if (!Number.isFinite(value)) return String(value);
-  if (Math.abs(value) < EPS) return "0";
-  return Number(value.toPrecision(12)).toString();
+function fmt(n) {
+  if (!Number.isFinite(n)) return String(n);
+  if (Math.abs(n) < EPS) return "0";
+  return Number(n.toPrecision(12)).toString();
 }
 
-function near(a, b, tolerance = EPS) {
-  return Math.abs(a - b) <= tolerance;
+function close(a, b, tol = EPS) {
+  return Math.abs(a - b) <= tol;
 }
 
-function factorial(n) {
-  if (!Number.isInteger(n) || n < 0 || n > 170) {
-    throw new Error("Factorial requires an integer from 0 to 170.");
-  }
-  let result = 1;
-  for (let i = 2; i <= n; i++) result *= i;
-  return result;
-}
-
-/* =========================================================
-   NUMERIC EXPRESSION PARSER
-   Supports arithmetic, parentheses and trig functions.
-   No eval() or Function() is used.
-   ========================================================= */
+/* ==========================================================
+   SAFE NUMERIC EXPRESSION PARSER
+   Examples: sin(30)^2, 2*sin(30), (1-cos(60))/2
+   Trigonometric inputs use degrees in the calculator.
+   ========================================================== */
 
 function tokenize(source) {
-  const text = source.replace(/\s+/g, "");
   const tokens = [];
+  const s = source.replace(/\s+/g, "");
   let i = 0;
 
-  while (i < text.length) {
-    const rest = text.slice(i);
-    const number = rest.match(/^(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/i);
-    const identifier = rest.match(/^[a-zA-Z]+/);
-    const ch = text[i];
+  while (i < s.length) {
+    const rest = s.slice(i);
+    let m = rest.match(/^(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/i);
 
-    if (number) {
-      tokens.push({ type: "number", value: Number(number[0]) });
-      i += number[0].length;
-    } else if (identifier) {
-      tokens.push({ type: "name", value: identifier[0].toLowerCase() });
-      i += identifier[0].length;
-    } else if ("+-*/^%()".includes(ch)) {
-      tokens.push({ type: ch, value: ch });
-      i++;
-    } else {
-      throw new Error("Unsupported character: " + ch);
+    if (m) {
+      tokens.push({ type: "number", value: Number(m[0]) });
+      i += m[0].length;
+      continue;
     }
+
+    m = rest.match(/^[a-zA-Z]+/);
+
+    if (m) {
+      tokens.push({ type: "name", value: m[0].toLowerCase() });
+      i += m[0].length;
+      continue;
+    }
+
+    if ("+-*/^%()".includes(s[i])) {
+      tokens.push({ type: s[i], value: s[i] });
+      i++;
+      continue;
+    }
+
+    throw new Error("Unsupported character: " + s[i]);
   }
 
   return tokens;
 }
 
-const FUNCTIONS = {
-  sin: (x) => Math.sin(x),
-  cos: (x) => Math.cos(x),
-  tan: (x) => {
-    if (Math.abs(Math.cos(x)) < EPS) {
-      throw new Error("tan is undefined at this angle.");
-    }
-    return Math.tan(x);
-  },
-  asin: (x) => {
-    if (x < -1 || x > 1) throw new Error("asin requires a value from -1 to 1.");
-    return Math.asin(x);
-  },
-  acos: (x) => {
-    if (x < -1 || x > 1) throw new Error("acos requires a value from -1 to 1.");
-    return Math.acos(x);
-  },
-  atan: (x) => Math.atan(x),
-  sqrt: (x) => {
-    if (x < 0) throw new Error("sqrt requires a non-negative value.");
-    return Math.sqrt(x);
-  },
-  abs: (x) => Math.abs(x),
-  ln: (x) => {
-    if (x <= 0) throw new Error("ln requires a positive value.");
-    return Math.log(x);
-  },
-  log: (x) => {
-    if (x <= 0) throw new Error("log requires a positive value.");
-    return Math.log10(x);
-  },
-  exp: (x) => Math.exp(x),
-  sec: (x) => {
-    const c = Math.cos(x);
-    if (Math.abs(c) < EPS) throw new Error("sec is undefined at this angle.");
-    return 1 / c;
-  },
-  csc: (x) => {
-    const s = Math.sin(x);
-    if (Math.abs(s) < EPS) throw new Error("csc is undefined at this angle.");
-    return 1 / s;
-  },
-  cot: (x) => {
-    const s = Math.sin(x);
-    if (Math.abs(s) < EPS) throw new Error("cot is undefined at this angle.");
-    return Math.cos(x) / s;
-  }
-};
-
 function evaluateExpression(source, angleMode = "degrees") {
   const tokens = tokenize(source);
-  let position = 0;
+  let pos = 0;
+
+  if (!tokens.length) throw new Error("Enter an expression.");
+
+  const trig = new Set(["sin", "cos", "tan", "sec", "csc", "cot"]);
 
   function peek() {
-    return tokens[position];
+    return tokens[pos];
   }
 
   function take(type) {
-    const token = peek();
-    if (!token || token.type !== type) {
+    if (!peek() || peek().type !== type) {
       throw new Error("Expected " + type + ".");
     }
-    position++;
-    return token;
-  }
-
-  function startsPrimary(token) {
-    return token && (
-      token.type === "number" ||
-      token.type === "name" ||
-      token.type === "("
-    );
+    return tokens[pos++];
   }
 
   function primary() {
-    const token = peek();
-    if (!token) throw new Error("Unexpected end of expression.");
+    const t = peek();
 
-    if (token.type === "+") {
-      position++;
+    if (!t) throw new Error("Unexpected end of expression.");
+
+    if (t.type === "+") {
+      pos++;
       return primary();
     }
 
-    if (token.type === "-") {
-      position++;
+    if (t.type === "-") {
+      pos++;
       return -primary();
     }
 
-    if (token.type === "number") {
-      position++;
-      return token.value;
+    if (t.type === "number") {
+      pos++;
+      return t.value;
     }
 
-    if (token.type === "(") {
-      position++;
-      const result = expression();
+    if (t.type === "(") {
+      pos++;
+      const value = expression();
       take(")");
-      return result;
+      return value;
     }
 
-    if (token.type === "name") {
-      position++;
-      const name = token.value;
+    if (t.type === "name") {
+      pos++;
+      const name = t.value;
 
       if (name === "pi") return Math.PI;
       if (name === "e") return Math.E;
 
-      if (peek() && peek().type === "(") {
-        if (!Object.prototype.hasOwnProperty.call(FUNCTIONS, name)) {
-          throw new Error("Unknown function: " + name);
-        }
-
-        position++;
-        const argument = expression();
-        take(")");
-
-        let x = argument;
-        if (angleMode === "degrees" &&
-            ["sin", "cos", "tan", "sec", "csc", "cot"].includes(name)) {
-          x *= DEG;
-        }
-
-        return FUNCTIONS[name](x);
+      if (!peek() || peek().type !== "(") {
+        throw new Error("Unknown name: " + name);
       }
 
-      throw new Error("Unknown name: " + name);
+      pos++;
+      const arg = expression();
+      take(")");
+
+      let x = arg;
+
+      if (angleMode === "degrees" && trig.has(name)) {
+        x *= DEG;
+      }
+
+      let result;
+
+      switch (name) {
+        case "sin": result = Math.sin(x); break;
+        case "cos": result = Math.cos(x); break;
+
+        case "tan":
+          if (Math.abs(Math.cos(x)) < EPS) {
+            throw new Error("tan is undefined at this angle.");
+          }
+          result = Math.tan(x);
+          break;
+
+        case "sec":
+          if (Math.abs(Math.cos(x)) < EPS) {
+            throw new Error("sec is undefined at this angle.");
+          }
+          result = 1 / Math.cos(x);
+          break;
+
+        case "csc":
+          if (Math.abs(Math.sin(x)) < EPS) {
+            throw new Error("csc is undefined at this angle.");
+          }
+          result = 1 / Math.sin(x);
+          break;
+
+        case "cot":
+          if (Math.abs(Math.sin(x)) < EPS) {
+            throw new Error("cot is undefined at this angle.");
+          }
+          result = Math.cos(x) / Math.sin(x);
+          break;
+
+        case "asin":
+          if (arg < -1 || arg > 1) {
+            throw new Error("asin requires a value between -1 and 1.");
+          }
+          result = Math.asin(arg);
+          break;
+
+        case "acos":
+          if (arg < -1 || arg > 1) {
+            throw new Error("acos requires a value between -1 and 1.");
+          }
+          result = Math.acos(arg);
+          break;
+
+        case "atan": result = Math.atan(arg); break;
+
+        case "sqrt":
+          if (arg < 0) throw new Error("sqrt requires a non-negative value.");
+          result = Math.sqrt(arg);
+          break;
+
+        case "abs": result = Math.abs(arg); break;
+
+        case "ln":
+          if (arg <= 0) throw new Error("ln requires a positive value.");
+          result = Math.log(arg);
+          break;
+
+        case "log":
+          if (arg <= 0) throw new Error("log requires a positive value.");
+          result = Math.log10(arg);
+          break;
+
+        case "exp": result = Math.exp(arg); break;
+
+        default:
+          throw new Error("Unsupported function: " + name);
+      }
+
+      return result;
     }
 
-    throw new Error("Unexpected token: " + token.value);
+    throw new Error("Unexpected token: " + t.value);
   }
 
   function power() {
     let value = primary();
+
     if (peek() && peek().type === "^") {
-      position++;
+      pos++;
       value = Math.pow(value, unary());
     }
+
     return value;
   }
 
@@ -213,25 +227,26 @@ function evaluateExpression(source, angleMode = "degrees") {
     let value = unary();
 
     while (peek()) {
-      const token = peek();
+      const op = peek().type;
 
-      if (token.type === "*") {
-        position++;
+      if (op === "*") {
+        pos++;
         value *= unary();
-      } else if (token.type === "/") {
-        position++;
+      } else if (op === "/") {
+        pos++;
         const divisor = unary();
+
         if (Math.abs(divisor) < Number.EPSILON) {
           throw new Error("Division by zero.");
         }
+
         value /= divisor;
-      } else if (token.type === "%") {
-        position++;
-        value %= unary();
-      } else if (startsPrimary(token)) {
-        // Supports implicit multiplication: 2sin(30) is not supported,
-        // but 2*(sin(30)) is always accepted.
-        throw new Error("Please write multiplication explicitly using *.");
+      } else if (op === "%") {
+        pos++;
+        const divisor = unary();
+
+        if (divisor === 0) throw new Error("Division by zero.");
+        value %= divisor;
       } else {
         break;
       }
@@ -243,9 +258,8 @@ function evaluateExpression(source, angleMode = "degrees") {
   function expression() {
     let value = term();
 
-    while (peek() && (peek().type === "+" || peek().type === "-")) {
-      const op = peek().type;
-      position++;
+    while (peek() && ["+", "-"].includes(peek().type)) {
+      const op = tokens[pos++].type;
       const right = term();
       value = op === "+" ? value + right : value - right;
     }
@@ -253,24 +267,22 @@ function evaluateExpression(source, angleMode = "degrees") {
     return value;
   }
 
-  if (tokens.length === 0) throw new Error("Enter an expression.");
+  const answer = expression();
 
-  const result = expression();
-
-  if (position !== tokens.length) {
-    throw new Error("Unexpected token: " + tokens[position].value);
+  if (pos !== tokens.length) {
+    throw new Error("Unexpected token: " + tokens[pos].value);
   }
 
-  if (!Number.isFinite(result)) {
+  if (!Number.isFinite(answer)) {
     throw new Error("The result is not a finite real number.");
   }
 
-  return result;
+  return answer;
 }
 
-/* =========================================================
-   TABS
-   ========================================================= */
+/* ==========================================================
+   NAVIGATION
+   ========================================================== */
 
 document.querySelectorAll(".tab").forEach((button) => {
   button.addEventListener("click", () => {
@@ -282,20 +294,20 @@ document.querySelectorAll(".tab").forEach((button) => {
 
     document.querySelectorAll(".tab-content").forEach((section) => {
       const active = section.id === target;
-      section.classList.toggle("active", active);
       section.hidden = !active;
+      section.classList.toggle("active", active);
     });
   });
 });
 
-/* =========================================================
-   CALCULATOR
-   ========================================================= */
+/* ==========================================================
+   NUMERIC CALCULATOR
+   ========================================================== */
 
 $("calculateBtn").addEventListener("click", () => {
   try {
-    const answer = evaluateExpression($("calcInput").value, "degrees");
-    $("calcOutput").textContent = "Result: " + formatNumber(answer);
+    const result = evaluateExpression($("calcInput").value, "degrees");
+    $("calcOutput").textContent = "Result: " + fmt(result);
   } catch (error) {
     $("calcOutput").textContent = "Error: " + error.message;
   }
@@ -312,170 +324,59 @@ $("calcInput").addEventListener("keydown", (event) => {
 
 document.querySelectorAll("[data-expression]").forEach((button) => {
   button.addEventListener("click", () => {
-    $("calcInput").value = button.dataset.expression;
-    document.querySelector('[data-tab="calculator"]').click();
+    $("lhsInput").value = button.dataset.expression;
+    $("rhsInput").value = "";
+    document.querySelector('[data-tab="prover"]').click();
   });
 });
 
-/* =========================================================
+/* ==========================================================
    FORMULA LIBRARY
-   ========================================================= */
+   ========================================================== */
 
 const FORMULAS = [
-  {
-    category: "Reciprocal",
-    name: "Sine and cosecant",
-    lhs: "csc(x)",
-    rhs: "1/sin(x)",
-    text: "csc(x) = 1/sin(x), where sin(x) ≠ 0."
-  },
-  {
-    category: "Reciprocal",
-    name: "Cosine and secant",
-    lhs: "sec(x)",
-    rhs: "1/cos(x)",
-    text: "sec(x) = 1/cos(x), where cos(x) ≠ 0."
-  },
-  {
-    category: "Reciprocal",
-    name: "Tangent and cotangent",
-    lhs: "cot(x)",
-    rhs: "1/tan(x)",
-    text: "cot(x) = cos(x)/sin(x), where sin(x) ≠ 0."
-  },
-  {
-    category: "Quotient",
-    name: "Tangent quotient",
-    lhs: "tan(x)",
-    rhs: "sin(x)/cos(x)",
-    text: "tan(x) = sin(x)/cos(x), where cos(x) ≠ 0."
-  },
-  {
-    category: "Quotient",
-    name: "Cotangent quotient",
-    lhs: "cot(x)",
-    rhs: "cos(x)/sin(x)",
-    text: "cot(x) = cos(x)/sin(x), where sin(x) ≠ 0."
-  },
-  {
-    category: "Pythagorean",
-    name: "Fundamental identity",
-    lhs: "sin(x)^2 + cos(x)^2",
-    rhs: "1",
-    text: "sin²(x) + cos²(x) = 1."
-  },
-  {
-    category: "Pythagorean",
-    name: "Tangent identity",
-    lhs: "1 + tan(x)^2",
-    rhs: "sec(x)^2",
-    text: "1 + tan²(x) = sec²(x), where cos(x) ≠ 0."
-  },
-  {
-    category: "Pythagorean",
-    name: "Cotangent identity",
-    lhs: "1 + cot(x)^2",
-    rhs: "csc(x)^2",
-    text: "1 + cot²(x) = csc²(x), where sin(x) ≠ 0."
-  },
-  {
-    category: "Even/odd",
-    name: "Odd sine",
-    lhs: "sin(-x)",
-    rhs: "-sin(x)",
-    text: "sin(-x) = -sin(x)."
-  },
-  {
-    category: "Even/odd",
-    name: "Even cosine",
-    lhs: "cos(-x)",
-    rhs: "cos(x)",
-    text: "cos(-x) = cos(x)."
-  },
-  {
-    category: "Cofunction",
-    name: "Complementary sine and cosine",
-    lhs: "sin(pi/2-x)",
-    rhs: "cos(x)",
-    text: "sin(π/2 − x) = cos(x), with angles in radians."
-  },
-  {
-    category: "Addition",
-    name: "Sine addition",
-    lhs: "sin(x+y)",
-    rhs: "sin(x)*cos(y)+cos(x)*sin(y)",
-    text: "sin(x + y) = sin(x)cos(y) + cos(x)sin(y)."
-  },
-  {
-    category: "Addition",
-    name: "Cosine addition",
-    lhs: "cos(x+y)",
-    rhs: "cos(x)*cos(y)-sin(x)*sin(y)",
-    text: "cos(x + y) = cos(x)cos(y) − sin(x)sin(y)."
-  },
-  {
-    category: "Double angle",
-    name: "Sine double angle",
-    lhs: "sin(2*x)",
-    rhs: "2*sin(x)*cos(x)",
-    text: "sin(2x) = 2sin(x)cos(x)."
-  },
-  {
-    category: "Double angle",
-    name: "Cosine double angle",
-    lhs: "cos(2*x)",
-    rhs: "1-2*sin(x)^2",
-    text: "cos(2x) = 1 − 2sin²(x)."
-  },
-  {
-    category: "Double angle",
-    name: "Cosine double angle alternate",
-    lhs: "cos(2*x)",
-    rhs: "2*cos(x)^2-1",
-    text: "cos(2x) = 2cos²(x) − 1."
-  },
-  {
-    category: "Half angle",
-    name: "Half-angle sine",
-    lhs: "sin(x/2)^2",
-    rhs: "(1-cos(x))/2",
-    text: "sin²(x/2) = (1 − cos(x))/2."
-  },
-  {
-    category: "Half angle",
-    name: "Half-angle cosine",
-    lhs: "cos(x/2)^2",
-    rhs: "(1+cos(x))/2",
-    text: "cos²(x/2) = (1 + cos(x))/2."
-  },
-  {
-    category: "Triple angle",
-    name: "Triple-angle sine",
-    lhs: "sin(3*x)",
-    rhs: "3*sin(x)-4*sin(x)^3",
-    text: "sin(3x) = 3sin(x) − 4sin³(x)."
-  },
-  {
-    category: "Triple angle",
-    name: "Triple-angle cosine",
-    lhs: "cos(3*x)",
-    rhs: "4*cos(x)^3-3*cos(x)",
-    text: "cos(3x) = 4cos³(x) − 3cos(x)."
-  },
-  {
-    category: "Product-sum",
-    name: "Sine times cosine",
-    lhs: "sin(x)*cos(y)",
-    rhs: "(sin(x+y)+sin(x-y))/2",
-    text: "sin(x)cos(y) = [sin(x+y) + sin(x−y)]/2."
-  },
-  {
-    category: "Sum-product",
-    name: "Sine sum",
-    lhs: "sin(x)+sin(y)",
-    rhs: "2*sin((x+y)/2)*cos((x-y)/2)",
-    text: "sin(x) + sin(y) = 2sin((x+y)/2)cos((x−y)/2)."
-  }
+  ["Reciprocal", "Sine and cosecant",
+    "csc(x) = 1/sin(x)", "sin(x) != 0"],
+  ["Reciprocal", "Cosine and secant",
+    "sec(x) = 1/cos(x)", "cos(x) != 0"],
+  ["Quotient", "Tangent quotient",
+    "tan(x) = sin(x)/cos(x)", "cos(x) != 0"],
+  ["Quotient", "Cotangent quotient",
+    "cot(x) = cos(x)/sin(x)", "sin(x) != 0"],
+  ["Pythagorean", "Fundamental identity",
+    "sin(x)^2 + cos(x)^2 = 1", "All real x"],
+  ["Pythagorean", "Tangent identity",
+    "1 + tan(x)^2 = sec(x)^2", "cos(x) != 0"],
+  ["Pythagorean", "Cotangent identity",
+    "1 + cot(x)^2 = csc(x)^2", "sin(x) != 0"],
+  ["Even/odd", "Odd sine",
+    "sin(-x) = -sin(x)", "All real x"],
+  ["Even/odd", "Even cosine",
+    "cos(-x) = cos(x)", "All real x"],
+  ["Cofunction", "Complementary angles",
+    "sin(pi/2 - x) = cos(x)", "Angles in radians"],
+  ["Addition", "Sine addition",
+    "sin(x+y) = sin(x)cos(y) + cos(x)sin(y)", "All real x,y"],
+  ["Addition", "Cosine addition",
+    "cos(x+y) = cos(x)cos(y) - sin(x)sin(y)", "All real x,y"],
+  ["Double angle", "Sine double angle",
+    "sin(2x) = 2sin(x)cos(x)", "All real x"],
+  ["Double angle", "Cosine double angle",
+    "cos(2x) = 1 - 2sin(x)^2", "All real x"],
+  ["Double angle", "Alternate cosine double angle",
+    "cos(2x) = 2cos(x)^2 - 1", "All real x"],
+  ["Half angle", "Half-angle sine",
+    "sin(x/2)^2 = (1-cos(x))/2", "All real x"],
+  ["Half angle", "Half-angle cosine",
+    "cos(x/2)^2 = (1+cos(x))/2", "All real x"],
+  ["Triple angle", "Triple-angle sine",
+    "sin(3x) = 3sin(x) - 4sin(x)^3", "All real x"],
+  ["Triple angle", "Triple-angle cosine",
+    "cos(3x) = 4cos(x)^3 - 3cos(x)", "All real x"],
+  ["Product-sum", "Sine times cosine",
+    "sin(x)cos(y) = [sin(x+y)+sin(x-y)]/2", "All real x,y"],
+  ["Sum-product", "Sine sum",
+    "sin(x)+sin(y) = 2sin((x+y)/2)cos((x-y)/2)", "All real x,y"]
 ];
 
 let selectedFormula = null;
@@ -484,27 +385,28 @@ function renderFormulas() {
   const category = $("formulaCategory").value;
   const list = $("formulaList");
   list.replaceChildren();
+  selectedFormula = null;
+  $("formulaDetails").textContent = "Select a formula to see its details.";
 
-  FORMULAS.filter((formula) =>
-    category === "All" || formula.category === category
-  ).forEach((formula) => {
-    const button = document.createElement("button");
-    button.textContent = formula.category + ": " + formula.name;
+  FORMULAS.filter((f) => category === "All" || f[0] === category)
+    .forEach((formula) => {
+      const button = document.createElement("button");
+      button.textContent = formula[0] + ": " + formula[1];
 
-    button.addEventListener("click", () => {
-      selectedFormula = formula;
+      button.addEventListener("click", () => {
+        selectedFormula = formula;
 
-      list.querySelectorAll("button").forEach((item) => {
-        item.classList.toggle("selected", item === button);
+        list.querySelectorAll("button").forEach((b) => {
+          b.classList.toggle("selected", b === button);
+        });
+
+        $("formulaDetails").textContent =
+          formula[1] + "\n\nIdentity: " + formula[2] +
+          "\nCondition: " + formula[3];
       });
 
-      $("formulaDetails").textContent =
-        formula.text + "\n\nLeft side: " + formula.lhs +
-        "\nRight side: " + formula.rhs;
+      list.appendChild(button);
     });
-
-    list.appendChild(button);
-  });
 }
 
 $("formulaCategory").addEventListener("change", renderFormulas);
@@ -515,17 +417,324 @@ $("formulaToCalcBtn").addEventListener("click", () => {
     return;
   }
 
-  $("calcInput").value = selectedFormula.lhs;
-  document.querySelector('[data-tab="calculator"]').click();
+  $("lhsInput").value = selectedFormula[2].split(" = ")[0];
+  $("rhsInput").value = selectedFormula[2].split(" = ")[1] || "";
+  document.querySelector('[data-tab="prover"]').click();
 });
 
 renderFormulas();
 
-/* =========================================================
-   BASIC PROOF TEMPLATES
-   This is a starter proof engine, not a universal theorem prover.
-   ========================================================= */
+/* ==========================================================
+   PROOF LIBRARY
+   These are worked derivations of selected identities.
+   ========================================================== */
 
-const PROOFS = {
-  py thagorean: null
+const PROOF_EXAMPLES = {
+  pythagorean: {
+    identity: "sin²(x) + cos²(x) = 1",
+    steps: [
+      "1. Start with the unit-circle identity.",
+      "   For a point on the unit circle, coordinates are (cos(x), sin(x)).",
+      "2. The unit-circle equation is X² + Y² = 1.",
+      "3. Substitute X = cos(x) and Y = sin(x).",
+      "   cos²(x) + sin²(x) = 1.",
+      "4. Reorder the terms.",
+      "   sin²(x) + cos²(x) = 1.",
+      "Hence Proved."
+    ]
+  },
+
+  "double-sine": {
+    identity: "sin(2x) = 2sin(x)cos(x)",
+    steps: [
+      "1. Use the sine addition identity:",
+      "   sin(A + B) = sin(A)cos(B) + cos(A)sin(B).",
+      "2. Set A = x and B = x.",
+      "   sin(x + x) = sin(x)cos(x) + cos(x)sin(x).",
+      "3. Combine the two equal terms.",
+      "   sin(2x) = 2sin(x)cos(x).",
+      "Hence Proved."
+    ]
+  },
+
+  "double-cosine": {
+    identity: "cos(2x) = 1 - 2sin²(x)",
+    steps: [
+      "1. Use the cosine addition identity:",
+      "   cos(A + B) = cos(A)cos(B) - sin(A)sin(B).",
+      "2. Set A = B = x.",
+      "   cos(2x) = cos²(x) - sin²(x).",
+      "3. Use cos²(x) = 1 - sin²(x).",
+      "4. Substitute and simplify.",
+      "   cos(2x) = 1 - sin²(x) - sin²(x).",
+      "   cos(2x) = 1 - 2sin²(x).",
+      "Hence Proved."
+    ]
+  },
+
+  "triple-sine": {
+    identity: "sin(3x) = 3sin(x) - 4sin³(x)",
+    steps: [
+      "1. Write 3x as 2x + x.",
+      "2. Apply the sine addition identity.",
+      "   sin(3x) = sin(2x)cos(x) + cos(2x)sin(x).",
+      "3. Substitute sin(2x) = 2sin(x)cos(x).",
+      "   and cos(2x) = cos²(x) - sin²(x).",
+      "4. Expand and combine terms.",
+      "   sin(3x) = 3sin(x)cos²(x) - sin³(x).",
+      "5. Use cos²(x) = 1 - sin²(x).",
+      "   sin(3x) = 3sin(x) - 4sin³(x).",
+      "Hence Proved."
+    ]
+  },
+
+  "addition-sine": {
+    identity: "sin(x+y) = sin(x)cos(y) + cos(x)sin(y)",
+    steps: [
+      "1. Consider a rotation by angle y on the unit circle.",
+      "2. The sine addition rule follows from the rotated coordinates.",
+      "3. The vertical coordinate after rotation is",
+      "   sin(x)cos(y) + cos(x)sin(y).",
+      "4. The same coordinate is sin(x+y).",
+      "Therefore, sin(x+y) = sin(x)cos(y) + cos(x)sin(y).",
+      "Hence Proved."
+    ]
+  },
+
+  "quotient-tangent": {
+    identity: "tan(x) = sin(x)/cos(x)",
+    steps: [
+      "1. In a right triangle, tan(x) = opposite/adjacent.",
+      "2. Divide numerator and denominator by the hypotenuse.",
+      "3. tan(x) = (opposite/hypotenuse)/(adjacent/hypotenuse).",
+      "4. Use sin(x) = opposite/hypotenuse.",
+      "   and cos(x) = adjacent/hypotenuse.",
+      "5. Therefore tan(x) = sin(x)/cos(x), where cos(x) != 0.",
+      "Hence Proved."
+    ]
+  }
 };
+
+$("runProofExampleBtn").addEventListener("click", () => {
+  const key = $("proofExample").value;
+  const proof = PROOF_EXAMPLES[key];
+
+  if (!proof) {
+    $("proofLibraryOutput").textContent = "Proof not available.";
+    return;
+  }
+
+  $("proofLibraryOutput").textContent =
+    "IDENTITY: " + proof.identity + "\n\n" + proof.steps.join("\n");
+});
+
+/* ==========================================================
+   IDENTITY CHECKER
+   Recognizes selected identities only.
+   Unsupported identities are NOT declared false or proved.
+   ========================================================== */
+
+function normalizeIdentitySide(s) {
+  return s.toLowerCase().replace(/\s+/g, "").replace(/π/g, "pi");
+}
+
+const KNOWN_IDENTITIES = [
+  ["sin(2*x)", "2*sin(x)*cos(x)"],
+  ["cos(2*x)", "cos(x)^2-sin(x)^2"],
+  ["cos(2*x)", "1-2*sin(x)^2"],
+  ["cos(2*x)", "2*cos(x)^2-1"],
+  ["sin(3*x)", "3*sin(x)-4*sin(x)^3"],
+  ["cos(3*x)", "4*cos(x)^3-3*cos(x)"],
+  ["sin(-x)", "-sin(x)"],
+  ["cos(-x)", "cos(x)"],
+  ["tan(x)", "sin(x)/cos(x)"],
+  ["cot(x)", "cos(x)/sin(x)"],
+  ["sin(x)^2+cos(x)^2", "1"],
+  ["1+tan(x)^2", "sec(x)^2"],
+  ["1+cot(x)^2", "csc(x)^2"],
+  ["sin(pi/2-x)", "cos(x)"],
+  ["sin(x/2)^2", "(1-cos(x))/2"],
+  ["cos(x/2)^2", "(1+cos(x))/2"]
+];
+
+function matchKnownIdentity(lhs, rhs) {
+  const a = normalizeIdentitySide(lhs);
+  const b = normalizeIdentitySide(rhs);
+
+  return KNOWN_IDENTITIES.some(([left, right]) => {
+    const l = normalizeIdentitySide(left);
+    const r = normalizeIdentitySide(right);
+    return (a === l && b === r) || (a === r && b === l);
+  });
+}
+
+$("proveBtn").addEventListener("click", () => {
+  const lhs = $("lhsInput").value.trim();
+  const rhs = $("rhsInput").value.trim();
+
+  if (!lhs || !rhs) {
+    $("identityOutput").textContent =
+      "Enter both the left-hand side and the right-hand side.";
+    return;
+  }
+
+  if (matchKnownIdentity(lhs, rhs)) {
+    $("identityOutput").textContent =
+      "IDENTITY RECOGNIZED\n\n" +
+      "This matches a supported standard identity.\n" +
+      "See the Proof Library for a worked derivation where available.\n\n" +
+      "Note: matching a known formula is not a general symbolic proof.";
+    return;
+  }
+
+  $("identityOutput").textContent =
+    "NOT PROVED AUTOMATICALLY\n\n" +
+    "This starter engine does not recognize this exact identity.\n" +
+    "That does not mean the identity is false.\n" +
+    "No general symbolic proof has been completed.";
+});
+
+$("loadExampleBtn").addEventListener("click", () => {
+  $("lhsInput").value = "sin(2*x)";
+  $("rhsInput").value = "2*sin(x)*cos(x)";
+  $("identityOutput").textContent = "Example loaded. Click Test Identity.";
+});
+
+/* ==========================================================
+   EQUATION SOLVER
+   Solves sin(x)=k, cos(x)=k and tan(x)=k on a finite interval.
+   ========================================================== */
+
+function solveEquation(fn, k, start, end, mode) {
+  if (![k, start, end].every(Number.isFinite)) {
+    throw new Error("Enter valid numeric values.");
+  }
+
+  if (end <= start) {
+    throw new Error("Interval end must be greater than interval start.");
+  }
+
+  if (end - start > 1000000) {
+    throw new Error("Please use a smaller interval.");
+  }
+
+  if (fn !== "tan" && (k < -1 || k > 1)) {
+    return [];
+  }
+
+  const toRad = (v) => mode === "degrees" ? v * DEG : v;
+  const fromRad = (v) => mode === "degrees" ? v / DEG : v;
+
+  const low = toRad(start);
+  const high = toRad(end);
+  const solutions = [];
+
+  function addPeriodic(base, period) {
+    const first = Math.ceil((low - base - EPS) / period);
+    const last = Math.floor((high - base + EPS) / period);
+
+    for (let n = first; n <= last; n++) {
+      const x = base + n * period;
+      if (x >= low - EPS && x <= high + EPS) {
+        solutions.push(fromRad(x));
+      }
+    }
+  }
+
+  if (fn === "sin") {
+    const a = Math.asin(k);
+    addPeriodic(a, 2 * Math.PI);
+    addPeriodic(Math.PI - a, 2 * Math.PI);
+  } else if (fn === "cos") {
+    const a = Math.acos(k);
+    addPeriodic(a, 2 * Math.PI);
+    addPeriodic(-a, 2 * Math.PI);
+  } else {
+    const a = Math.atan(k);
+    addPeriodic(a, Math.PI);
+  }
+
+  solutions.sort((a, b) => a - b);
+
+  const unique = [];
+  for (const x of solutions) {
+    if (!unique.some((v) => close(v, x, 1e-7))) unique.push(x);
+  }
+
+  return unique;
+}
+
+$("solveEquationBtn").addEventListener("click", () => {
+  try {
+    const fn = $("eqFunction").value;
+    const k = Number($("eqValue").value);
+    const start = Number($("eqStart").value);
+    const end = Number($("eqEnd").value);
+    const mode = $("eqAngleMode").value;
+
+    const solutions = solveEquation(fn, k, start, end, mode);
+
+    if (!solutions.length) {
+      $("equationOutput").textContent =
+        "No solutions found in the selected interval.";
+      return;
+    }
+
+    $("equationOutput").textContent =
+      fn + "(x) = " + fmt(k) + "\n\nSolutions (" + mode + "):\n" +
+      solutions.map((x) => "x = " + fmt(x)).join("\n");
+  } catch (error) {
+    $("equationOutput").textContent = "Error: " + error.message;
+  }
+});
+
+/* ==========================================================
+   CONNECTION STATUS
+   ========================================================== */
+
+function updateConnectionStatus() {
+  const status = $("connectionStatus");
+  if (!status) return;
+
+  status.textContent = navigator.onLine ? "Online" : "Offline mode";
+}
+
+window.addEventListener("online", updateConnectionStatus);
+window.addEventListener("offline", updateConnectionStatus);
+updateConnectionStatus();
+
+/* ==========================================================
+   PWA INSTALL BUTTON
+   Manifest and service worker will be added in later steps.
+   ========================================================== */
+
+let installPrompt = null;
+const installButton = $("installButton");
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  installButton.hidden = false;
+});
+
+if (installButton) {
+  installButton.addEventListener("click", async () => {
+    if (!installPrompt) {
+      alert("If installation is supported, use your browser menu to install this app.");
+      return;
+    }
+
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    installButton.hidden = true;
+  });
+}
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch((error) => {
+      console.warn("Offline worker is not ready yet:", error.message);
+    });
+  });
+}
