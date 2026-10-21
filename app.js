@@ -3,7 +3,7 @@
 
 /* =========================================================
    ADVANCED TRIGONOMETRY CALCULATOR
-   Offline-friendly starter implementation
+   Offline-friendly implementation
    No external libraries and no eval()
    ========================================================= */
 
@@ -22,7 +22,8 @@ function close(a, b, eps = EPS) {
 }
 
 function out(id, message) {
-  $(id).textContent = message;
+  const element = $(id);
+  if (element) element.textContent = message;
 }
 
 function rad(angle, mode) {
@@ -31,8 +32,6 @@ function rad(angle, mode) {
 
 /* =========================================================
    SAFE NUMERIC EXPRESSION PARSER
-   Examples: sin(30), 2*sin(45), (1-cos(60))/2
-   Trigonometric functions accept degrees in calculator mode.
    ========================================================= */
 
 const FN = {
@@ -135,6 +134,7 @@ function evaluateExpression(source, mode = "degrees") {
         expect(")");
 
         let x = arg;
+
         if (["sin", "cos", "tan"].includes(name) &&
             mode === "degrees") {
           x = rad(x, mode);
@@ -146,7 +146,9 @@ function evaluateExpression(source, mode = "degrees") {
         }
 
         if (name === "sqrt" && x < 0) {
-          throw new Error("Square root requires a non-negative value.");
+          throw new Error(
+            "Square root requires a non-negative value."
+          );
         }
 
         if ((name === "ln" || name === "log") && x <= 0) {
@@ -164,10 +166,12 @@ function evaluateExpression(source, mode = "degrees") {
 
   function power() {
     const base = primary();
+
     if (peek() && peek().type === "^") {
       p++;
       return Math.pow(base, unary());
     }
+
     return base;
   }
 
@@ -185,9 +189,11 @@ function evaluateExpression(source, mode = "degrees") {
       } else if (peek().type === "/") {
         p++;
         const d = unary();
+
         if (Math.abs(d) < Number.EPSILON) {
           throw new Error("Division by zero.");
         }
+
         v /= d;
       } else if (peek().type === "%") {
         p++;
@@ -196,6 +202,7 @@ function evaluateExpression(source, mode = "degrees") {
         break;
       }
     }
+
     return v;
   }
 
@@ -207,10 +214,13 @@ function evaluateExpression(source, mode = "degrees") {
       const r = term();
       v = op === "+" ? v + r : v - r;
     }
+
     return v;
   }
 
-  if (!tokens.length) throw new Error("Enter an expression.");
+  if (!tokens.length) {
+    throw new Error("Enter an expression.");
+  }
 
   const result = expression();
 
@@ -289,8 +299,8 @@ const FORMULAS = [
   ["Even/odd", "Odd sine", "sin(-x) = -sin(x)", "All real x"],
   ["Even/odd", "Even cosine", "cos(-x) = cos(x)", "All real x"],
   ["Cofunction", "Complementary angles", "sin(pi/2-x) = cos(x)", "Radians"],
-  ["Addition", "Sine addition", "sin(x+y) = sin(x)cos(y)+cos(x)sin(y)", "All real x,y"],
-  ["Addition", "Cosine addition", "cos(x+y) = cos(x)cos(y)-sin(x)sin(y)", "All real x,y"],
+  ["Addition", "Sine addition", "sin(x+y) = sin(x)*cos(y)+cos(x)*sin(y)", "All real x,y"],
+  ["Addition", "Cosine addition", "cos(x+y) = cos(x)*cos(y)-sin(x)*sin(y)", "All real x,y"],
   ["Double angle", "Sine double angle", "sin(2*x) = 2*sin(x)*cos(x)", "All real x"],
   ["Double angle", "Cosine double angle", "cos(2*x) = 1-2*sin(x)^2", "All real x"],
   ["Double angle", "Cosine alternate", "cos(2*x) = 2*cos(x)^2-1", "All real x"],
@@ -307,6 +317,7 @@ let selectedFormula = null;
 function renderFormulas() {
   const category = $("formulaCategory").value;
   const list = $("formulaList");
+
   list.replaceChildren();
   selectedFormula = null;
   out("formulaDetails", "Select a formula to see its details.");
@@ -319,12 +330,16 @@ function renderFormulas() {
 
     b.addEventListener("click", () => {
       selectedFormula = f;
+
       list.querySelectorAll("button").forEach((x) => {
         x.classList.toggle("selected", x === b);
       });
-      out("formulaDetails",
+
+      out(
+        "formulaDetails",
         f[1] + "\n\nIdentity: " + f[2] +
-        "\nDomain note: " + f[3]);
+        "\nDomain note: " + f[3]
+      );
     });
 
     list.appendChild(b);
@@ -338,6 +353,7 @@ $("formulaToCalcBtn").addEventListener("click", () => {
     out("formulaDetails", "Select a formula first.");
     return;
   }
+
   $("calcInput").value = selectedFormula[2].split("=")[0].trim();
   document.querySelector('[data-tab="calculator"]').click();
 });
@@ -346,7 +362,6 @@ renderFormulas();
 
 /* =========================================================
    IDENTITY PROOF LIBRARY
-   Proof steps are supplied explicitly for known identities.
    ========================================================= */
 
 const PROOF_LIBRARY = {
@@ -355,77 +370,223 @@ const PROOF_LIBRARY = {
     rhs: "1",
     title: "Pythagorean identity",
     steps: [
-      "Start with the unit-circle identity: x² + y² = 1.",
-      "On the unit circle, x = cos(x) and y = sin(x).",
-      "Substitute these values: cos²(x) + sin²(x) = 1.",
+      "Start with the unit-circle identity: X² + Y² = 1.",
+      "On the unit circle, X = cos(x) and Y = sin(x).",
+      "Substitute: cos²(x) + sin²(x) = 1.",
       "Reorder the terms: sin²(x) + cos²(x) = 1.",
       "Hence proved."
     ]
   },
+
   "double-sine": {
     lhs: "sin(2*x)",
     rhs: "2*sin(x)*cos(x)",
     title: "Sine double-angle identity",
     steps: [
-      "Use the sine addition formula: sin(A+B) = sin(A)cos(B) + cos(A)sin(B).",
+      "Use sin(A+B) = sin(A)cos(B) + cos(A)sin(B).",
       "Put A = x and B = x.",
       "sin(2x) = sin(x)cos(x) + cos(x)sin(x).",
       "Combine the equal terms: sin(2x) = 2sin(x)cos(x).",
       "Hence proved."
     ]
   },
+
   "double-cosine": {
     lhs: "cos(2*x)",
     rhs: "1-2*sin(x)^2",
     title: "Cosine double-angle identity",
     steps: [
-      "Use cos(A+B) = cos(A)cos(B) − sin(A)sin(B).",
+      "Use cos(A+B) = cos(A)cos(B) - sin(A)sin(B).",
       "Put A = x and B = x.",
-      "cos(2x) = cos²(x) − sin²(x).",
-      "From sin²(x) + cos²(x) = 1, cos²(x) = 1 − sin²(x).",
-      "Substitute: cos(2x) = 1 − sin²(x) − sin²(x).",
-      "Therefore cos(2x) = 1 − 2sin²(x).",
+      "cos(2x) = cos²(x) - sin²(x).",
+      "From sin²(x) + cos²(x) = 1, cos²(x) = 1 - sin²(x).",
+      "Substitute: cos(2x) = 1 - sin²(x) - sin²(x).",
+      "Therefore cos(2x) = 1 - 2sin²(x).",
       "Hence proved."
     ]
   },
+
   "triple-sine": {
     lhs: "sin(3*x)",
     rhs: "3*sin(x)-4*sin(x)^3",
     title: "Triple-angle sine identity",
     steps: [
       "Write sin(3x) = sin(2x+x).",
-      "Use the addition formula: sin(2x+x) = sin(2x)cos(x) + cos(2x)sin(x).",
-      "Substitute sin(2x) = 2sin(x)cos(x) and cos(2x) = 1 − 2sin²(x).",
-      "sin(3x) = 2sin(x)cos²(x) + sin(x) − 2sin³(x).",
-      "Use cos²(x) = 1 − sin²(x).",
-      "Expand and collect terms to obtain 3sin(x) − 4sin³(x).",
+      "Use sin(A+B) = sin(A)cos(B) + cos(A)sin(B).",
+      "Substitute sin(2x) = 2sin(x)cos(x) and cos(2x) = 1 - 2sin²(x).",
+      "sin(3x) = 2sin(x)cos²(x) + sin(x) - 2sin³(x).",
+      "Use cos²(x) = 1 - sin²(x).",
+      "Expand and collect terms to obtain 3sin(x) - 4sin³(x).",
       "Hence proved."
     ]
   },
+
   "addition-sine": {
     lhs: "sin(x+y)",
     rhs: "sin(x)*cos(y)+cos(x)*sin(y)",
     title: "Sine addition identity",
     steps: [
-      "This is the sine addition formula.",
-      "It follows from the rotation matrix or unit-circle angle-addition construction.",
-      "sin(x+y) = sin(x)cos(y) + cos(x)sin(y).",
+      "Use the sine angle-addition formula.",
+      "sin(A+B) = sin(A)cos(B) + cos(A)sin(B).",
+      "Put A = x and B = y.",
+      "Therefore sin(x+y) = sin(x)cos(y) + cos(x)sin(y).",
       "Hence proved."
     ]
   },
+
+  "addition-cosine": {
+    lhs: "cos(x+y)",
+    rhs: "cos(x)*cos(y)-sin(x)*sin(y)",
+    title: "Cosine addition identity",
+    steps: [
+      "Use the cosine angle-addition formula.",
+      "cos(A+B) = cos(A)cos(B) - sin(A)sin(B).",
+      "Put A = x and B = y.",
+      "Therefore cos(x+y) = cos(x)cos(y) - sin(x)sin(y).",
+      "Hence proved."
+    ]
+  },
+
   "quotient-tangent": {
     lhs: "tan(x)",
     rhs: "sin(x)/cos(x)",
     title: "Tangent quotient identity",
     steps: [
       "By definition, tan(x) = sin(x)/cos(x).",
-      "The quotient is defined only when cos(x) ≠ 0.",
-      "Therefore tan(x) = sin(x)/cos(x), for cos(x) ≠ 0.",
+      "The quotient is defined only when cos(x) is not zero.",
+      "Therefore tan(x) = sin(x)/cos(x), where cos(x) != 0.",
+      "Hence proved."
+    ]
+  },
+
+  "quotient-cotangent": {
+    lhs: "cot(x)",
+    rhs: "cos(x)/sin(x)",
+    title: "Cotangent quotient identity",
+    steps: [
+      "By definition, cot(x) = cos(x)/sin(x).",
+      "The quotient is defined only when sin(x) is not zero.",
+      "Therefore cot(x) = cos(x)/sin(x), where sin(x) != 0.",
+      "Hence proved."
+    ]
+  },
+
+  "half-sine": {
+    lhs: "sin(x/2)^2",
+    rhs: "(1-cos(x))/2",
+    title: "Sine half-angle identity",
+    steps: [
+      "Start with cos(2A) = 1 - 2sin²(A).",
+      "Rearrange: 2sin²(A) = 1 - cos(2A).",
+      "Divide both sides by 2.",
+      "Put A = x/2, so 2A = x.",
+      "Therefore sin²(x/2) = (1 - cos(x))/2.",
+      "Hence proved."
+    ]
+  },
+
+  "half-cosine": {
+    lhs: "cos(x/2)^2",
+    rhs: "(1+cos(x))/2",
+    title: "Cosine half-angle identity",
+    steps: [
+      "Start with cos(2A) = 2cos²(A) - 1.",
+      "Rearrange: 2cos²(A) = 1 + cos(2A).",
+      "Divide both sides by 2.",
+      "Put A = x/2, so 2A = x.",
+      "Therefore cos²(x/2) = (1 + cos(x))/2.",
+      "Hence proved."
+    ]
+  },
+
+  "triple-cosine": {
+    lhs: "cos(3*x)",
+    rhs: "4*cos(x)^3-3*cos(x)",
+    title: "Cosine triple-angle identity",
+    steps: [
+      "Write cos(3x) = cos(2x+x).",
+      "Use cos(A+B) = cos(A)cos(B) - sin(A)sin(B).",
+      "Substitute the double-angle identities.",
+      "Use sin²(x) + cos²(x) = 1 to simplify.",
+      "Collect terms to obtain cos(3x) = 4cos³(x) - 3cos(x).",
+      "Hence proved."
+    ]
+  },
+
+  "reciprocal-sec": {
+    lhs: "sec(x)",
+    rhs: "1/cos(x)",
+    title: "Secant reciprocal identity",
+    steps: [
+      "Secant is the reciprocal of cosine.",
+      "Therefore sec(x) = 1/cos(x), provided cos(x) != 0.",
+      "Hence proved."
+    ]
+  },
+
+  "reciprocal-csc": {
+    lhs: "csc(x)",
+    rhs: "1/sin(x)",
+    title: "Cosecant reciprocal identity",
+    steps: [
+      "Cosecant is the reciprocal of sine.",
+      "Therefore csc(x) = 1/sin(x), provided sin(x) != 0.",
+      "Hence proved."
+    ]
+  },
+
+  "pythagorean-tangent": {
+    lhs: "1+tan(x)^2",
+    rhs: "sec(x)^2",
+    title: "Tangent-secant Pythagorean identity",
+    steps: [
+      "Start with sin²(x) + cos²(x) = 1.",
+      "Divide every term by cos²(x), where cos(x) != 0.",
+      "sin²(x)/cos²(x) + 1 = 1/cos²(x).",
+      "Use tan(x) = sin(x)/cos(x) and sec(x) = 1/cos(x).",
+      "Therefore 1 + tan²(x) = sec²(x).",
+      "Hence proved."
+    ]
+  },
+
+  "pythagorean-cotangent": {
+    lhs: "1+cot(x)^2",
+    rhs: "csc(x)^2",
+    title: "Cotangent-cosecant Pythagorean identity",
+    steps: [
+      "Start with sin²(x) + cos²(x) = 1.",
+      "Divide every term by sin²(x), where sin(x) != 0.",
+      "1 + cos²(x)/sin²(x) = 1/sin²(x).",
+      "Use cot(x) = cos(x)/sin(x) and csc(x) = 1/sin(x).",
+      "Therefore 1 + cot²(x) = csc²(x).",
+      "Hence proved."
+    ]
+  },
+
+  "even-cosine": {
+    lhs: "cos(-x)",
+    rhs: "cos(x)",
+    title: "Even cosine identity",
+    steps: [
+      "Cosine is an even function.",
+      "An even function satisfies f(-x) = f(x).",
+      "Therefore cos(-x) = cos(x).",
+      "Hence proved."
+    ]
+  },
+
+  "odd-sine": {
+    lhs: "sin(-x)",
+    rhs: "-sin(x)",
+    title: "Odd sine identity",
+    steps: [
+      "Sine is an odd function.",
+      "An odd function satisfies f(-x) = -f(x).",
+      "Therefore sin(-x) = -sin(x).",
       "Hence proved."
     ]
   }
 };
-
 
 function normalise(s) {
   return s.toLowerCase()
@@ -434,7 +595,6 @@ function normalise(s) {
     .replace(/π/g, "pi")
     .replace(/²/g, "^2")
     .replace(/³/g, "^3")
-    // Treat (sin(x))^2 as equivalent to sin(x)^2.
     .replace(/\((sin|cos|tan)\(([^()]*)\)\)\^(\d+)/g, "$1($2)^$3");
 }
 
@@ -445,17 +605,19 @@ function loadProof(proof) {
 
 $("runProofExampleBtn").addEventListener("click", () => {
   const proof = PROOF_LIBRARY[$("proofExample").value];
+
   if (!proof) {
     out("proofLibraryOutput", "No proof template is available.");
     return;
   }
+
   out("proofLibraryOutput", loadProof(proof));
 });
 
 /* =========================================================
-   LIMITED SYMBOLIC IDENTITY CHECKER
-   It only confirms identities matching known exact rules.
-   It never uses numerical samples as a proof.
+   IDENTITY CHECKER
+   Only exact known rules are accepted.
+   This is not a universal symbolic algebra engine.
    ========================================================= */
 
 function checkIdentity(lhs, rhs) {
@@ -466,7 +628,8 @@ function checkIdentity(lhs, rhs) {
     const pL = normalise(proof.lhs);
     const pR = normalise(proof.rhs);
 
-    if ((a === pL && b === pR) || (a === pR && b === pL)) {
+    if ((a === pL && b === pR) ||
+        (a === pR && b === pL)) {
       return {
         verified: true,
         message: loadProof(proof)
@@ -474,7 +637,6 @@ function checkIdentity(lhs, rhs) {
     }
   }
 
-  // A few additional exact pattern rules.
   const extra = [
     ["sin(-x)", "-sin(x)"],
     ["cos(-x)", "cos(x)"],
@@ -538,12 +700,19 @@ function solveTrigEquation(fn, k, start, end, mode) {
   if (![k, start, end].every(Number.isFinite)) {
     throw new Error("Enter valid numerical values.");
   }
+
   if (end < start) {
     throw new Error("Interval end must be greater than start.");
   }
+
   if (end - start > 1000000) {
     throw new Error("The requested interval is too large.");
   }
+
+  if (!["sin", "cos", "tan"].includes(fn)) {
+    throw new Error("Choose sin, cos, or tan.");
+  }
+
   if (fn !== "tan" && (k < -1 || k > 1)) {
     return [];
   }
@@ -601,21 +770,26 @@ $("solveEquationBtn").addEventListener("click", () => {
     }
 
     const unit = mode === "degrees" ? "°" : " radians";
-    out("equationOutput",
+
+    out(
+      "equationOutput",
       fn + "(x) = " + k + "\n\nSolutions:\n" +
-      solutions.map((x) => fmt(x) + unit).join("\n"));
+      solutions.map((x) => fmt(x) + unit).join("\n")
+    );
   } catch (e) {
     out("equationOutput", "ERROR\n" + e.message);
   }
 });
 
 /* =========================================================
-   CONNECTION STATUS
+   CONNECTION STATUS AND OFFLINE SUPPORT
    ========================================================= */
 
 function updateConnectionStatus() {
   const el = $("connectionStatus");
-  if (el) el.textContent = navigator.onLine ? "Online" : "Offline mode";
+  if (el) {
+    el.textContent = navigator.onLine ? "Online" : "Offline mode";
+  }
 }
 
 window.addEventListener("online", updateConnectionStatus);
